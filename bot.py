@@ -21,7 +21,7 @@ async def handle_url(update: Update, context):
     url = update.message.text.strip()
     
     if not re.search(r'(youtube|youtu|rutube)', url):
-        await update.message.reply_text("❌ Отправьте ссылку YouTube или Rutube")
+        await update.message.reply_text("❌ Отправьте ссылку на YouTube или Rutube")
         return
     
     context.user_data['video_url'] = url
@@ -31,16 +31,17 @@ async def handle_url(update: Update, context):
         ydl_opts = {'quiet': True}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            title = info.get('title', 'Видео')[:40]
+            title = info.get('title', 'Видео')[:50]
             
             keyboard = [
-                [InlineKeyboardButton("📹 Видео", callback_data="video")],
-                [InlineKeyboardButton("🎵 MP3", callback_data="audio")],
+                [InlineKeyboardButton("📹 Видео 480p", callback_data="video")],
+                [InlineKeyboardButton("🎵 MP3 аудио", callback_data="audio")],
                 [InlineKeyboardButton("❌ Отмена", callback_data="cancel")]
             ]
             
             await status_msg.edit_text(
-                f"📹 {title}\n\nВыберите формат:",
+                f"📹 *{title}*\n\nВыберите формат:",
+                parse_mode='Markdown',
                 reply_markup=InlineKeyboardMarkup(keyboard)
             )
     except Exception as e:
@@ -56,10 +57,10 @@ async def handle_callback(update: Update, context):
     
     video_url = context.user_data.get('video_url')
     if not video_url:
-        await query.edit_message_text("❌ Ошибка")
+        await query.edit_message_text("❌ Отправьте ссылку заново")
         return
     
-    await query.edit_message_text("⏳ Скачиваю...")
+    await query.edit_message_text("⏳ Скачиваю... Подождите...")
     
     try:
         if query.data == "video":
@@ -100,7 +101,9 @@ async def handle_callback(update: Update, context):
                         title=info.get('title', 'Аудио')[:50]
                     )
                 os.remove(filename)
-                
+        
+        context.user_data.clear()
+        
     except Exception as e:
         await query.edit_message_text(f"❌ Ошибка: {str(e)[:150]}")
 
