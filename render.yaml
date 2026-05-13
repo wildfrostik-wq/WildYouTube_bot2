@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: render-youtube-bot
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python bot.py
-    envVars:
-      - key: BOT_TOKEN
-        value: 8626456969:AAFFHffm16ikzert9G0qIIKaIlvCmnEK4Ts
