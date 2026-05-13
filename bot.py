@@ -6,22 +6,35 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import yt_dlp
 import logging
 
+# Включаем логирование для отслеживания ошибок
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8626456969:AAFFHffm16ikzert9G0qIIKaIlvCmnEK4Ts")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+if not BOT_TOKEN:
+    print("❌ Ошибка: переменная BOT_TOKEN не установлена!")
+    exit(1)
 
 DOWNLOAD_DIR = Path("downloads")
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 async def start(update: Update, context):
-    await update.message.reply_text("🎬 Отправьте ссылку на YouTube или Rutube!")
+    await update.message.reply_text(
+        "🎬 *Rutube Downloader Bot*\n\n"
+        "Я умею скачивать видео с Rutube!\n\n"
+        "📌 *Как пользоваться:*\n"
+        "1. Отправьте ссылку на видео Rutube\n"
+        "2. Выберите формат (видео или аудио)\n"
+        "3. Получите готовый файл!\n\n"
+        "⚡ Поддерживается: MP4 видео и MP3 аудио\n\n"
+        "Просто отправьте ссылку!",
+        parse_mode='Markdown'
+    )
 
 async def handle_url(update: Update, context):
     url = update.message.text.strip()
     
-    if not re.search(r'(youtube|youtu|rutube)', url):
-        await update.message.reply_text("❌ Отправьте ссылку на YouTube или Rutube")
+    if not re.search(r'rutube\.ru', url):
+        await update.message.reply_text("❌ Пожалуйста, отправьте ссылку с Rutube (rutube.ru)")
         return
     
     context.user_data['video_url'] = url
@@ -34,7 +47,7 @@ async def handle_url(update: Update, context):
             title = info.get('title', 'Видео')[:50]
             
             keyboard = [
-                [InlineKeyboardButton("📹 Видео 480p", callback_data="video")],
+                [InlineKeyboardButton("📹 Видео", callback_data="video")],
                 [InlineKeyboardButton("🎵 MP3 аудио", callback_data="audio")],
                 [InlineKeyboardButton("❌ Отмена", callback_data="cancel")]
             ]
@@ -57,7 +70,7 @@ async def handle_callback(update: Update, context):
     
     video_url = context.user_data.get('video_url')
     if not video_url:
-        await query.edit_message_text("❌ Отправьте ссылку заново")
+        await query.edit_message_text("❌ Ошибка: отправьте ссылку заново")
         return
     
     await query.edit_message_text("⏳ Скачиваю... Подождите...")
@@ -65,7 +78,7 @@ async def handle_callback(update: Update, context):
     try:
         if query.data == "video":
             ydl_opts = {
-                'format': 'best[height<=480][ext=mp4]',
+                'format': 'best[ext=mp4]',
                 'outtmpl': str(DOWNLOAD_DIR / '%(title)s.%(ext)s'),
                 'quiet': True,
             }
@@ -108,12 +121,16 @@ async def handle_callback(update: Update, context):
         await query.edit_message_text(f"❌ Ошибка: {str(e)[:150]}")
 
 def main():
-    print("🤖 Бот запущен на Render!")
-    application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url))
-    application.add_handler(CallbackQueryHandler(handle_callback))
-    application.run_polling()
+    print("🤖 Rutube Downloader Bot запущен!")
+    print(f"BOT_TOKEN установлен: {'Да' if BOT_TOKEN else 'Нет'}")
+    
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_url))
+    app.add_handler(CallbackQueryHandler(handle_callback))
+    
+    print("✅ Бот готов к работе!")
+    app.run_polling()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
